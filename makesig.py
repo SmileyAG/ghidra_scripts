@@ -1,5 +1,5 @@
 #Generates a SourceMod-ready signature.
-#@author nosoop
+#@author nosoop & YaLTeR
 #@category _NEW_
 #@keybinding 
 #@menupath 
@@ -21,7 +21,7 @@ BytePattern = collections.namedtuple('BytePattern', ['is_wildcard', 'byte'])
 
 def __bytepattern_ida_str(self):
 	# return an IDA-style binary search string
-	return '{:02X}'.format(self.byte) if not self.is_wildcard else '?'
+	return '{:02X}'.format(self.byte) if not self.is_wildcard else '??'
 
 def __bytepattern_sig_str(self):
 	# return a SourceMod-style byte signature

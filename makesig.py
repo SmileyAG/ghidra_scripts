@@ -93,35 +93,41 @@ def process(start_at = MAKE_SIG_AT['fn']):
 	matches = []
 	match_limit = 128
 	
-	while fm.getFunctionContaining(ins.getAddress()) == fn:
-		for entry in getMaskedInstruction(ins):
-			byte_pattern.append(entry)
-			if entry.is_wildcard:
-				pattern += '.'
+	try:
+		while fm.getFunctionContaining(ins.getAddress()) == fn:
+			for entry in getMaskedInstruction(ins):
+				byte_pattern.append(entry)
+				if entry.is_wildcard:
+					pattern += '.'
+				else:
+					pattern += r'\x{:02x}'.format(entry.byte)
+			
+			expected_next = ins.getAddress().add(ins.length)
+			ins = ins.getNext()
+			
+			if 0 < len(matches) < match_limit:
+				# we have all the remaining matches, start only searching those addresses
+				match_set = AddressSet()
+				for addr in matches:
+					match_set.add(addr, addr.add(len(byte_pattern)))
+				matches = findBytes(match_set, pattern, match_limit, 1)
 			else:
-				pattern += r'\x{:02x}'.format(entry.byte)
-		
-		expected_next = ins.getAddress().add(ins.length)
-		ins = ins.getNext()
-		
-		if ins.getAddress() != expected_next:
-			# we don't have a good way to deal with alignment bytes
-			# raise an exception for now
-			raise Exception("Instruction at %s is not adjacent"
-					" to previous (expected %s)" % (expected_next, ins.getAddress()))
-		
-		if 0 < len(matches) < match_limit:
-			# we have all the remaining matches, start only searching those addresses
-			match_set = AddressSet()
-			for addr in matches:
-				match_set.add(addr, addr.add(len(byte_pattern)))
-			matches = findBytes(match_set, pattern, match_limit, 1)
-		else:
-			# the matches are sorted in ascending order, so the first match will be the start
-			matches = findBytes(matches[0] if len(matches) else None, pattern, match_limit)
-		
-		if len(matches) < 2:
-			break
+				# the matches are sorted in ascending order, so the first match will be the start
+				matches = findBytes(matches[0] if len(matches) else None, pattern, match_limit)
+			
+			if len(matches) < 2:
+				break
+			
+			if ins.getAddress() != expected_next:
+				# we don't have a good way to deal with alignment bytes
+				# raise an exception for now
+				raise Exception("Instruction at %s is not adjacent"
+						" to previous (expected %s)" % (expected_next, ins.getAddress()))
+	except Exception:
+		print(*(b.ida_str() for b in byte_pattern))
+		print("".join(b.sig_str() for b in byte_pattern))
+		print('Signature matched', len(matches), 'locations:', *(matches))
+		raise
 	
 	if not len(matches) == 1:
 		print(*(b.ida_str() for b in byte_pattern))

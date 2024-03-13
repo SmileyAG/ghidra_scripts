@@ -73,7 +73,7 @@ def getMaskedInstruction(ins):
 		else:
 			yield BytePattern(byte = b & 0xFF, is_wildcard = False)
 
-def process(start_at = MAKE_SIG_AT['fn']):
+def process(start_at = MAKE_SIG_AT['fn'], min_length = 1):
 	fm = currentProgram.getFunctionManager()
 	fn = fm.getFunctionContaining(currentAddress)
 	cm = currentProgram.getCodeManager()
@@ -109,6 +109,9 @@ def process(start_at = MAKE_SIG_AT['fn']):
 			
 			expected_next = ins.getAddress().add(ins.length)
 			ins = ins.getNext()
+
+			if len(byte_pattern) < min_length:
+				continue
 			
 			if 0 < len(matches) < match_limit:
 				# we have all the remaining matches, start only searching those addresses
@@ -150,4 +153,9 @@ if __name__ == "__main__":
 		raise Exception("Not in a function")
 
 	start_at = askChoice("makesig", "Make sig at:", MAKE_SIG_AT.values(), MAKE_SIG_AT['fn'])
-	process(start_at)
+	min_length = 1
+	number_of_bytes_selected = askYesNo("makesig", "Do you want to specify a minimum length of signature? (yes/no)")
+	if number_of_bytes_selected:
+		min_length = askInt("Specify a minimum length", "Length")
+
+	process(start_at, (min_length if min_length > 0 else 1))

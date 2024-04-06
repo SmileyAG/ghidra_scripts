@@ -127,10 +127,10 @@ def process(start_at = MAKE_SIG_AT['fn'], min_length = 1):
 				break
 			
 			if ins.getAddress() != expected_next:
-				# we don't have a good way to deal with alignment bytes
-				# raise an exception for now
-				raise Exception("Instruction at %s is not adjacent"
-						" to previous (expected %s)" % (expected_next, ins.getAddress()))
+				# add wildcards until we get to the next instruction
+				for _ in range(ins.getAddress().subtract(expected_next)):
+					byte_pattern.append(BytePattern(is_wildcard = True, byte = None))
+					pattern += '.'
 	except Exception:
 		print(*(b.ida_str() for b in byte_pattern))
 		print("".join(b.sig_str() for b in byte_pattern))
